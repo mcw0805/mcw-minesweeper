@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Minesweeper</title>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+    integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+    <link rel="stylesheet" href="./styles.css">
+    
+
+    <!-- fonts -->
+    <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" />
+
+    <style type="text/css">
+    </style>
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="game-control">
+            <div>
+                <select id="levelDropDown" onchange="updateSelectedLevel()">
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Expert">Expert</option>
+                </select>
+            </div>
+
+            <h4 id="mineCountDown">00</h4>
+            <button id="resetBtn" onclick="resetBoard()">
+                <img id="btnImg" src="./smile.png">
+            </button>
+            <h4 id="gameTimer">000</h4>
+            <!-- <button id="testBtn">X</button> -->
+
+        </div>
+
+        <!-- <div id="game-canvas">
+            <canvas id="minesweeperCanvas" width="500" height="500">
+
+            </canvas>
+        </div> -->
+
+        <div id="svg-container" oncontextmenu="return false;"></div>
+    </div>
+
+    <script src="./minesweeperDisplayControl.js"></script>
+    <!-- <script src="./gameLogic.js"></script> -->
+</body>
+
+</html>
