@@ -5,7 +5,7 @@ const DEFAULT_CANVAS_HEIGHT = 450;
 const SQUARE_SIZE = 25;
 const MARGIN = 10;
 
-/* grid sizes by level */
+/* grid sizes by level (same as Windows Minesweeper) */
 const BEGINNER_GRID_SIZE = 9;
 const INTERMEDIATE_GRID_SIZE = 16;
 const EXPERT_GRID_WIDTH = 30;
@@ -20,6 +20,7 @@ const BEGINNER_LEVEL = 0;
 const INTERMEDIATE_LEVEL = 1;
 const EXPERT_LEVEL = 2;
 
+/* directions for moving horizontally, vertically, and diagonally */
 const NUM_DIRECTIONS = 8;
 const dRow = [-1, -1, -1, 0, 0, 1, 1, 1];
 const dCol = [-1, 0, 1, -1, 1, -1, 0, 1];
@@ -28,17 +29,18 @@ const RIGHT_CLICK_LOOP_LENGTH = 3;
 
 const DEBUG = true;
 
+var rightClickDown = false;  
+var leftClickDown = false;
+
+var grid = []; // will be a 2D array containing Tile objects
+var gameSvg;
+
+/* Game states */
 const INITIALIZE_STATE = 0;
 const START_STATE = 1;
 const PLAY_STATE = 2;
 const GAME_LOSE_STATE = 3;
 const GAME_WIN_STATE = 4;
-
-var rightClickDown = false;
-var leftClickDown = false;
-
-var grid = [];
-var gameSvg;
 
 /* variables for the current state of the game */
 var currentGridWidth = BEGINNER_GRID_SIZE;
@@ -49,7 +51,7 @@ var currentState = INITIALIZE_STATE;
 var currentCanvasWidth = 2 * MARGIN + currentGridWidth * SQUARE_SIZE;
 var currentCanvasHeight = 2 * MARGIN + currentGridHeight * SQUARE_SIZE;
 
-/* time control */
+/* time, num mines marked control */
 var clickFirstTime = true;
 var flaggedMinesCountDown = BEGINNER_NUM_MINES;
 
@@ -129,7 +131,7 @@ function resetBoard() {
 
     clickFirstTime = true;
     updateSelectedLevel();
-    let oldGridSvg = document.querySelector('#grid-svg');
+    let oldGridSvg = document.querySelector("#grid-svg");
     oldGridSvg.remove();
 
     init();
@@ -246,6 +248,9 @@ function upClickHandler(e) {
     }
 }
 
+/*
+    Left click in minesweeper is used to get the number of mines around the clicked cell.
+*/
 function cellLeftClickHandler() {
 
     let rowCol = cellIdNumToRowCol(parseInt((this.id).substring(1)), currentGridWidth);
@@ -256,8 +261,11 @@ function cellLeftClickHandler() {
         // console.log('reconfiguring mine board');
         resetBoard();
     }
+
+    // mechanism to make timer call only once
+    // start timer on the very very first click
     clickFirstTime = false;
-    if (changeFirstTime != clickFirstTime) { // mechanism to make timer called only once
+    if (changeFirstTime != clickFirstTime) {
         if (gameTimeInSec == 0) {
             gameTimeInSec = 1;
             gameTimerDisplay.innerHTML = gameTimeInSec;
@@ -265,12 +273,15 @@ function cellLeftClickHandler() {
         timer();
     }
 
-    // if hasn't been clicked
+    // if cell hasn't been clicked -> update UI to make the cell visible
     if (!grid[row][col].isVisible) {
         setVisible(row, col, currentGridWidth, currentGridHeight, gameSvg);
     }
 }
 
+/* 
+    Right click in minesweeper is used to mark mines, mark as question mark, or leave as unmarked.
+*/
 function cellRightClickHandler() {
     let rowCol = cellIdNumToRowCol(parseInt((this.id).substring(1)), currentGridWidth);
     let row = rowCol[0], col = rowCol[1];
@@ -318,19 +329,28 @@ function cellRightClickHandler() {
 
 }
 
-function middleClickHandler(e) {
+/*  
+    Both left and right click is used for flooding the cells when mines around a cell have all been discovered. 
+    Or it is used to highlight undiscovered surrounding cells.
 
+    With MacBooks and some other laptops, simultaneous left/right click is not possible on the trackpad, so middle click
+    is used instead to flood. Highlighting surrounding cells is not possible in this case.
+*/
+function middleClickHandler(e) {
 
     if (e && e.which == 3) {
         rightClickDown = true;
     } else if (e && e.which == 1) {
         leftClickDown = true;
     }
+
+    // simultaneous left and right click
     if (leftClickDown && rightClickDown) {
-        console.log('both clicked');
+        // console.log('both clicked');
         e.preventDefault();
         let rowCol = cellIdNumToRowCol(parseInt((this.id).substring(1)), currentGridWidth);
         let row = rowCol[0], col = rowCol[1];
+        
         if (grid[row][col].label > 0 && grid[row][col].isVisible) { 
 
             let numFlaggedCorrect = 0;
@@ -369,12 +389,16 @@ function middleClickHandler(e) {
                 gameLose();
                 return;
             }
+
+            // highlight neighboring cells that are not visible yet
             if (numFlaggedCorrect === grid[row][col].label && neighborCoordinates.length > 0) {
                 setNonMineNeighborVisible(neighborCoordinates);
             }
         }
     }
 
+    // middle click only
+    // implementation is mostly same as above
     if (e && e.which == 2) {
         e.preventDefault();
         let rowCol = cellIdNumToRowCol(parseInt((this.id).substring(1)), currentGridWidth);
@@ -420,6 +444,7 @@ function middleClickHandler(e) {
     return false;
 }
 
+// highlight surrounding cells
 function setNonMineNeighborVisible(neighborCoordinates) {
     for (let i = 0; i < neighborCoordinates.length; i++) {
         let row = neighborCoordinates[i][0];
@@ -428,6 +453,7 @@ function setNonMineNeighborVisible(neighborCoordinates) {
     }
 }
 
+// draw flag for marking mines
 function drawFlagWithinCell(squareSize, cellGroup) {
     let poleLen = squareSize * 0.6;
     let verticalShift = (squareSize - poleLen) / 2;
@@ -479,6 +505,7 @@ function drawNumberWithinCell(num, cellGroup) {
     cellGroup.appendChild(numberText);
 }
 
+// mine is just a circle
 function drawMineWithinCell(cellGroup, squareSize) {
     let mineRadius = (squareSize * 0.6) / 2;
 
@@ -503,6 +530,7 @@ function markCellExploded(cellGroup) {
     }
 }
 
+// incorrectly marked mines are covered with an X symbol (2 diagonal lines)
 function markCellIncorrect(cellGroup, squareSize) {
     //let cellGroup = document.getElementById(cellId);
 
@@ -539,6 +567,13 @@ function clearCell(cellGroup) {
 
 /* game logic */
 
+/*
+    Tile object: 
+        - isMine -> self-explanatory
+        - isVisible -> label is visible, meaning it has been clicked
+        - label -> number of mines surrounding the cell
+        - rightClickStatus -> toggles among mine flag, question mark, and no mark
+*/
 function Tile(isMine, isVisible, label) {
     this.isMine = isMine;
     this.isVisible = isVisible;
@@ -558,6 +593,7 @@ Tile.prototype.getTileInfo = () => {
 
 Tile.count = 0;
 
+// Just setting up the grid. Nothing about mines/labels at this point.
 function initializeGrid(gridWidth, gridHeight) {
 
     Tile.count = 0;
@@ -744,59 +780,3 @@ function addSeconds() {
 function timer() {
     t = setTimeout(addSeconds, 1000);
 }
-
-// var testBtn = document.getElementById("testBtn");
-// testBtn.onclick = testFunc;
-// testBtn.oncontextmenu = testFunc;
-// testBtn.onmousedown = testFunc2;
-
-// function testFunc(e) {
-//     if (e.which !== 1) {
-//         e.preventDefault();
-//     }
-//     console.log(e.which);
-//     return false;
-// }
-
-// function testFunc2(e) {
-//     if (e.which !== 1) {
-//         e.preventDefault();
-//     }
-//     console.log(e.which);
-//     return false;
-// }
-
-/*
-
-const INITIALIZE_STATE = 0;
-const START_STATE = 1;
-const PLAY_STATE = 2;
-const GAME_OVER_STATE = 3;
-
-    States:
-        - initialize (before starting or after clicking the reset button
-        - game started -> clicked
-            while (first clicked is mine)
-                state = initialize
-            else state = playing state
-        - playing state
-            start timer
-            run timer while game is not over
-            if game over
-                state = game end
-        - game end
-            win or lose message
-    while (true)
-    {
-        switch (currentState) {
-            case INITIALIZE_STATE:
-                init();
-                break;
-            case START_STATE:
-            case PLAY_STATE:
-            case GAME_OVER_STATE:
-        }
-    }
-
-
-*/
